@@ -1,0 +1,11 @@
+Proposal Proyek KB
+by: James Wibisono Santoso - 26415037
+
+Judul Proyek: Sucker Spider
+
+- Disediakan berbagai macam serangga (kecuali laba-laba) berupa particle swarm
+- User bertindak sebagai laba-laba
+- laba-laba tersebut menyempotkan jaring ke serangga - serangga yang berupa particle swarm itu
+- Diberikan batasan waktu selama 2 menit untuk menghabiskan serangga tersebut
+- Player akan menang jika dapat menghabiskan serangga tersebut selama <= 2 menit
+- Jika lebih dari 2 menit maka terjadi game over
