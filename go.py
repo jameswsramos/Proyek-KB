@@ -1,46 +1,93 @@
+#!/usr/bin/env python
 
-package main
+import argparse
+import sys
 
-import (
-	"log"
-	"os"
+from go import Board, BoardError, View, clear, getch
 
-	"github.com/gonuts/commander"
-	"github.com/gonuts/flag"
-)
 
-const (
-	defaultPyVersion = "py2"
-)
+def main():
+    # Get arguments
+    parser = argparse.ArgumentParser(description='Starts a game of go in the terminal.')
+    parser.add_argument('-s', '--size', type=int, default=19, help='size of board')
 
-var (
-	app *commander.Command
-)
+    args = parser.parse_args()
 
-func init() {
-	app = &commander.Command{
-		UsageLine: "gopy",
-		Subcommands: []*commander.Command{
-			gopyMakeCmdGen(),
-			gopyMakeCmdBind(),
-		},
-		Flag: *flag.NewFlagSet("gopy", flag.ExitOnError),
-	}
-}
+    if args.size < 7 or args.size > 19:
+        sys.stdout.write('Board size must be between 7 and 19!\n')
+        sys.exit(0)
 
-func main() {
-	err := app.Flag.Parse(os.Args[1:])
-	if err != nil {
-		log.Printf("error parsing flags: %v\n", err)
-		os.Exit(1)
-	}
+    # Initialize board and view
+    board = Board(args.size)
+    view = View(board)
+    err = None
 
-	args := app.Flag.Args()
-	err = app.Dispatch(args)
-	if err != nil {
-		log.Printf("error dispatching command: %v\n", err)
-		os.Exit(1)
-	}
+    # User actions
+    def move():
+        """
+        Makes a move at the current position of the cursor for the current
+        turn.
+        """
+        board.move(*view.cursor)
+        view.redraw()
 
-	os.Exit(0)
-}
+    def undo():
+        """
+        Undoes the last move.
+        """
+        board.undo()
+        view.redraw()
+
+    def redo():
+        """
+        Redoes an undone move.
+        """
+        board.redo()
+        view.redraw()
+
+    def exit():
+        """
+        Exits the game.
+        """
+        sys.exit(0)
+
+    # Action keymap
+    KEYS = {
+        'w': view.cursor_up,
+        's': view.cursor_down,
+        'a': view.cursor_left,
+        'd': view.cursor_right,
+        ' ': move,
+        'u': undo,
+        'r': redo,
+        '\x1b': exit,
+    }
+
+    # Main loop
+    while True:
+        # Print board
+        clear()
+        sys.stdout.write('{0}\n'.format(view))
+        sys.stdout.write('Black: {black} <===> White: {white}\n'.format(**board.score))
+        sys.stdout.write('{0}\'s move... '.format(board.turn))
+
+        if err:
+            sys.stdout.write('\n' + err + '\n')
+            err = None
+
+        # Get action key
+        c = getch()
+
+        try:
+            # Execute selected action
+            KEYS[c]()
+        except BoardError as be:
+            # Board error (move on top of other piece, suicidal move, etc.)
+            err = be.message
+        except KeyError:
+            # Action not found, do nothing
+            pass
+
+
+if __name__ == '__main__':
+    main()
